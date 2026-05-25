@@ -20,7 +20,7 @@
   const scannerId = 'qr-reader'
 
   /** @type {string} */
-  let inputValue = secret
+  let inputValue = ''
   /** @type {boolean} */
   let scannerActive = false
   /** @type {string} */
@@ -28,7 +28,7 @@
   /** @type {Html5Qrcode | null} */
   let qrScanner = null
 
-  $: if (secret && secret !== inputValue) inputValue = secret
+  $: if (mode === 'sender-auto' && secret && secret !== inputValue) inputValue = secret
 
   /** @param {string} text */
   const parseRoomFromText = (text) => {
