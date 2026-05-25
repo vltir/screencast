@@ -2,22 +2,32 @@
   import { createEventDispatcher, onDestroy } from 'svelte'
   import { Html5Qrcode } from 'html5-qrcode'
 
+  /** @type {string} */
   export let secret = ''
+  /** @type {string[]} */
   export let wordlist = []
+  /** @type {string} */
   export let status = ''
+  /** @type {string} */
   export let error = ''
+  /** @type {'sender-auto' | 'sender-manual' | 'connected'} */
   export let mode = 'sender-manual'
 
   const dispatch = createEventDispatcher()
   const scannerId = 'qr-reader'
 
+  /** @type {string} */
   let inputValue = secret
+  /** @type {boolean} */
   let scannerActive = false
+  /** @type {string} */
   let scannerError = ''
+  /** @type {Html5Qrcode | null} */
   let qrScanner = null
 
   $: if (secret && secret !== inputValue) inputValue = secret
 
+  /** @param {string} text */
   const parseRoomFromText = (text) => {
     try {
       const url = new URL(text)
@@ -34,6 +44,16 @@
     return ''
   }
 
+  /** @param {unknown} err */
+  const getErrorMessage = (err) => {
+    if (err && typeof err === 'object' && 'message' in err) {
+      const message = err.message
+      if (typeof message === 'string') return message
+    }
+    if (typeof err === 'string') return err
+    return ''
+  }
+
   const startSharing = () => {
     dispatch('start', { secret: inputValue })
   }
@@ -42,9 +62,9 @@
     if (!qrScanner) return
     try {
       await qrScanner.stop()
-      await qrScanner.clear()
+      qrScanner.clear()
     } catch (err) {
-      scannerError = err?.message ?? 'Unable to stop scanner.'
+      scannerError = getErrorMessage(err) || 'Unable to stop scanner.'
     }
     qrScanner = null
     scannerActive = false
@@ -59,7 +79,7 @@
       await qrScanner.start(
         { facingMode: 'environment' },
         { fps: 10, qrbox: 250 },
-        async (decodedText) => {
+        async (/** @type {string} */ decodedText) => {
           const parsed = parseRoomFromText(decodedText)
           await stopScanner()
           if (parsed) {
@@ -72,11 +92,12 @@
         () => {}
       )
     } catch (err) {
-      scannerError = err?.message ?? 'Unable to start the camera.'
+      scannerError = getErrorMessage(err) || 'Unable to start the camera.'
       scannerActive = false
       qrScanner = null
     }
   }
+
 
   onDestroy(() => {
     stopScanner()

@@ -11,6 +11,7 @@
   const config = { appId: 'serverless-screencast' }
   const wordSet = new Set(wordlist)
 
+  /** @type {'receiver' | 'sender-auto' | 'sender-manual' | 'connected'} */
   let role = 'receiver'
   let roomSecret = ''
   let roomParam = ''
@@ -18,27 +19,39 @@
   let shareUrl = ''
   let status = ''
   let error = ''
+  /** @type {MediaStream | null} */
   let localStream = null
+  /** @type {MediaStream | null} */
   let remoteStream = null
+  /** @type {ReturnType<typeof joinRoom> | null} */
   let room = null
 
+  /** @param {string} secret */
   const normalizeSecret = (secret) =>
     secret
       .toLowerCase()
       .replace(/[\s-]+/g, ' ')
       .trim()
 
+  /** @param {string} secret */
   const toParamSecret = (secret) => normalizeSecret(secret).split(' ').join('-')
+  /** @param {string} param */
   const fromParamSecret = (param) => param.toLowerCase().replace(/-+/g, ' ').trim()
 
+  /** @param {string} secret */
   const isValidSecret = (secret) => {
     const words = normalizeSecret(secret).split(' ').filter(Boolean)
-    return words.length === 12 && words.every((word) => wordSet.has(word))
+    return (
+      words.length === 12 &&
+      words.every(/** @param {string} word */ (word) => wordSet.has(word))
+    )
   }
 
+  /** @param {string} param */
   const buildShareUrl = (param) =>
     `${window.location.origin}${window.location.pathname}?room=${encodeURIComponent(param)}`
 
+  /** @param {string} secret */
   const hashSecret = async (secret) => {
     const data = new TextEncoder().encode(normalizeSecret(secret))
     const digest = await crypto.subtle.digest('SHA-256', data)
@@ -53,8 +66,11 @@
     room = null
   }
 
+  /** @param {MediaStream | null} stream */
   const stopStream = (stream) => {
-    stream?.getTracks().forEach((track) => track.stop())
+    stream?.getTracks().forEach(
+      /** @param {MediaStreamTrack} track */ (track) => track.stop()
+    )
   }
 
   const resetStreams = () => {
@@ -63,17 +79,33 @@
     remoteStream = null
   }
 
+  /** @param {string} roomId */
   const joinRoomWithTimeout = (roomId) => {
     return joinRoom(config, roomId, {
       handshakeTimeoutMs: 30000,
       onJoinError: (details) => {
-        const message = details?.error?.message ?? details?.error ?? 'unknown error'
+        const message = getErrorMessage(details?.error)
         error = `Connection failed: ${message}`
         status = ''
       },
     })
   }
 
+  /** @param {unknown} err */
+  const getErrorMessage = (err) => {
+    if (err && typeof err === 'object' && 'message' in err) {
+      const message = err.message
+      if (typeof message === 'string') return message
+    }
+    if (typeof err === 'string') return err
+    return 'unknown error'
+  }
+
+  /** @param {unknown} err */
+  const isNotAllowedError = (err) =>
+    Boolean(err && typeof err === 'object' && 'name' in err && err.name === 'NotAllowedError')
+
+  /** @param {string} secret */
   const initReceiverFlow = async (secret) => {
     cleanupRoom()
     resetStreams()
@@ -85,7 +117,7 @@
     qrCodeUrl = await QRCode.toDataURL(shareUrl, { margin: 1, width: 480 })
     const roomHash = await hashSecret(roomSecret)
     room = joinRoomWithTimeout(roomHash)
-    room.onPeerStream = (stream) => {
+    room.onPeerStream = /** @param {MediaStream} stream */ (stream) => {
       remoteStream = stream
       role = 'connected'
       const [track] = stream.getVideoTracks()
@@ -99,6 +131,7 @@
     }
   }
 
+  /** @param {string} secret */
   const startSenderFlow = async (secret) => {
     cleanupRoom()
     resetStreams()
@@ -122,7 +155,7 @@
       status = 'Connecting to receiver…'
       const roomHash = await hashSecret(normalized)
       room = joinRoomWithTimeout(roomHash)
-      room.onPeerJoin = (peerId) => {
+      room.onPeerJoin = /** @param {string} peerId */ (peerId) => {
         if (localStream) {
           room.addStream(localStream, { target: peerId })
         }
@@ -138,10 +171,10 @@
         })
       }
     } catch (err) {
-      if (err?.name === 'NotAllowedError') {
+      if (isNotAllowedError(err)) {
         error = 'Screen sharing was blocked. Please allow it in the dialog.'
       } else {
-        error = err?.message ?? 'Screen sharing failed.'
+        error = getErrorMessage(err)
       }
       status = ''
     }
@@ -153,11 +186,13 @@
     status = ''
   }
 
+  /** @param {CustomEvent<{secret: string}>} event */
   const handleManualStart = (event) => {
     role = 'sender-manual'
     startSenderFlow(event.detail.secret)
   }
 
+  /** @param {CustomEvent<{secret: string}>} event */
   const handleScan = (event) => {
     role = 'sender-manual'
     startSenderFlow(event.detail.secret)

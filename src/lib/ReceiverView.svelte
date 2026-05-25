@@ -1,12 +1,18 @@
 <script>
   import { createEventDispatcher } from 'svelte'
 
+  /** @type {string} */
   export let qrCodeUrl = ''
+  /** @type {string} */
   export let secret = ''
+  /** @type {string} */
   export let shareUrl = ''
+  /** @type {string} */
   export let status = ''
 
   const dispatch = createEventDispatcher()
+  /** @type {string[]} */
+  let words = []
   $: words = secret ? secret.split(' ') : []
 </script>
 
