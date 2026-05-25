@@ -5,6 +5,7 @@
   export let secret = ''
   export let shareUrl = ''
   export let status = ''
+  export let diagnostics = []
 
   const dispatch = createEventDispatcher()
   $: words = secret ? secret.split(' ') : []
@@ -31,6 +32,17 @@
 
   {#if status}
     <div class="status">{status}</div>
+  {/if}
+
+  {#if diagnostics.length}
+    <details class="diagnostics">
+      <summary>Diagnostics</summary>
+      <ul>
+        {#each diagnostics as line}
+          <li>{line}</li>
+        {/each}
+      </ul>
+    </details>
   {/if}
 
   <button class="share-button" type="button" on:click={() => dispatch('share')}>

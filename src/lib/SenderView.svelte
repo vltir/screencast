@@ -7,6 +7,7 @@
   export let status = ''
   export let error = ''
   export let mode = 'sender-manual'
+  export let diagnostics = []
 
   const dispatch = createEventDispatcher()
   const scannerId = 'qr-reader'
@@ -129,6 +130,17 @@
   {/if}
   {#if scannerError}
     <div class="error">{scannerError}</div>
+  {/if}
+
+  {#if diagnostics.length}
+    <details class="diagnostics">
+      <summary>Diagnostics</summary>
+      <ul>
+        {#each diagnostics as line}
+          <li>{line}</li>
+        {/each}
+      </ul>
+    </details>
   {/if}
 
   <div class:scanner-active={scannerActive} class="scanner">
