@@ -18,9 +18,10 @@
   export let onScan = () => {}
 
   const scannerId = 'qr-reader'
+  const wordCount = 12
 
-  /** @type {string} */
-  let inputValue = ''
+  /** @type {string[]} */
+  let words = Array(wordCount).fill('')
   /** @type {boolean} */
   let scannerActive = false
   /** @type {string} */
@@ -28,7 +29,25 @@
   /** @type {Html5Qrcode | null} */
   let qrScanner = null
 
-  $: if (mode === 'sender-auto' && secret && secret !== inputValue) inputValue = secret
+  /** @param {string} value */
+  const normalizeWords = (value) =>
+    value
+      .toLowerCase()
+      .replace(/-+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+
+  /** @param {string} value */
+  const setWordsFromSecret = (value) => {
+    const parts = normalizeWords(value).split(' ').filter(Boolean).slice(0, wordCount)
+    words = Array(wordCount)
+      .fill('')
+      .map((_, index) => parts[index] ?? '')
+  }
+
+  const joinWords = () => words.map((word) => word.trim()).filter(Boolean).join(' ')
+
+  $: if (mode === 'sender-auto' && secret) setWordsFromSecret(secret)
 
   /** @param {string} text */
   const parseRoomFromText = (text) => {
@@ -58,7 +77,14 @@
   }
 
   const startSharing = () => {
-    onStart?.(inputValue)
+    onStart?.(joinWords())
+  }
+
+  /** @param {number} index @param {string} value */
+  const updateWord = (index, value) => {
+    const next = words.slice()
+    next[index] = value
+    words = next
   }
 
   const stopScanner = async () => {
@@ -86,7 +112,7 @@
           const parsed = parseRoomFromText(decodedText)
           await stopScanner()
           if (parsed) {
-            inputValue = parsed
+            setWordsFromSecret(parsed)
             onScan?.(parsed)
           } else {
             scannerError = 'No room information found in the QR code.'
@@ -117,17 +143,22 @@
     {/if}
   </div>
 
-  <label class="input-label" for="room-input">Room words</label>
-  <input
-    id="room-input"
-    class="room-input"
-    type="text"
-    list="bip39-words"
-    placeholder="word1 word2 word3 …"
-    bind:value={inputValue}
-    autocomplete="off"
-    spellcheck="false"
-  />
+  <label class="input-label" for="word-0">Room words</label>
+  <div class="word-grid">
+    {#each words as word, index}
+      <input
+        id={`word-${index}`}
+        class="room-input word-input"
+        type="text"
+        list="bip39-words"
+        placeholder={`word ${index + 1}`}
+        value={word}
+        on:input={(event) => updateWord(index, event.currentTarget.value)}
+        autocomplete="off"
+        spellcheck="false"
+      />
+    {/each}
+  </div>
 
   <datalist id="bip39-words">
     {#each wordlist as word}
