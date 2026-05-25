@@ -1,6 +1,5 @@
 <script>
   import { onDestroy, onMount } from 'svelte'
-  import { generateMnemonic } from '@scure/bip39'
   import { wordlist } from '@scure/bip39/wordlists/english.js'
   import { joinRoom } from 'trystero/nostr'
   import QRCode from 'qrcode'
@@ -9,6 +8,7 @@
   import VideoPlayer from './lib/VideoPlayer.svelte'
 
   const config = { appId: 'serverless-screencast' }
+  const wordCount = 4
   const wordSet = new Set(wordlist)
 
   /** @type {'receiver' | 'sender-auto' | 'sender-manual' | 'connected'} */
@@ -42,7 +42,7 @@
   const isValidSecret = (secret) => {
     const words = normalizeSecret(secret).split(' ').filter(Boolean)
     return (
-      words.length === 12 &&
+      words.length === wordCount &&
       words.every(/** @param {string} word */ (word) => wordSet.has(word))
     )
   }
@@ -59,6 +59,14 @@
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
       .replace(/=+$/g, '')
+  }
+
+  /** @param {number} count */
+  const generateWords = (count) => {
+    const numbers = new Uint32Array(count)
+    crypto.getRandomValues(numbers)
+    const words = Array.from(numbers, (value) => wordlist[value % wordlist.length])
+    return words.join(' ')
   }
 
   const cleanupRoom = () => {
@@ -138,7 +146,7 @@
     error = ''
     const normalized = normalizeSecret(secret)
     if (!isValidSecret(normalized)) {
-      error = 'Please enter 12 valid BIP39 words.'
+      error = `Please enter ${wordCount} valid words.`
       status = ''
       return
     }
@@ -208,7 +216,7 @@
       return
     }
     role = 'receiver'
-    const secret = generateMnemonic(wordlist)
+    const secret = generateWords(wordCount)
     initReceiverFlow(secret)
   })
 
@@ -232,6 +240,7 @@
   <SenderView
     secret={roomSecret}
     wordlist={wordlist}
+    wordCount={wordCount}
     status={status}
     error={error}
     mode={role}

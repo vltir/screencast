@@ -7,6 +7,8 @@
   export let secret = ''
   /** @type {string[]} */
   export let wordlist = []
+  /** @type {number} */
+  export let wordCount = 4
   /** @type {string} */
   export let status = ''
   /** @type {string} */
@@ -24,6 +26,8 @@
   let inputValue = ''
   /** @type {HTMLInputElement | null} */
   let inputEl = null
+  /** @type {string} */
+  let placeholder = ''
   /** @type {string} */
   let lastPrefix = ''
   /** @type {string[]} */
@@ -52,6 +56,7 @@
   }
 
   $: if (mode === 'sender-auto' && secret) setInputValue(normalizeWords(secret))
+  $: placeholder = Array.from({ length: wordCount }, (_, index) => `word${index + 1}`).join(' ')
 
   /** @param {string} text */
   const parseRoomFromText = (text) => {
@@ -211,7 +216,7 @@
     {#if mode === 'sender-auto'}
       <p>Starting screen share from the QR link…</p>
     {:else}
-      <p>Enter the 12 words or scan the TV QR code.</p>
+      <p>Enter the {wordCount} words or scan the TV QR code.</p>
     {/if}
   </div>
 
@@ -220,7 +225,7 @@
     id="room-input"
     class="room-input"
     type="text"
-    placeholder="word1 word2 word3 …"
+    placeholder={placeholder}
     bind:this={inputEl}
     value={inputValue}
     on:input={updateInput}
