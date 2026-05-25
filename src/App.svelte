@@ -2,7 +2,7 @@
   import { onDestroy, onMount } from 'svelte'
   import { generateMnemonic } from '@scure/bip39'
   import { wordlist } from '@scure/bip39/wordlists/english.js'
-  import { getRelaySockets, joinRoom, selfId } from 'trystero/nostr'
+  import { joinRoom } from 'trystero/nostr'
   import QRCode from 'qrcode'
   import ReceiverView from './lib/ReceiverView.svelte'
   import SenderView from './lib/SenderView.svelte'
@@ -18,12 +18,9 @@
   let shareUrl = ''
   let status = ''
   let error = ''
-  let diagnostics = []
   let localStream = null
   let remoteStream = null
   let room = null
-  let relayTimer = null
-  let lastRelaySnapshot = ''
 
   const normalizeSecret = (secret) =>
     secret
@@ -56,54 +53,6 @@
     room = null
   }
 
-  const stopRelayMonitor = () => {
-    if (relayTimer) {
-      clearInterval(relayTimer)
-      relayTimer = null
-    }
-  }
-
-  const logDiagnostic = (message, details) => {
-    const timestamp = new Date().toLocaleTimeString()
-    diagnostics = [...diagnostics, `${timestamp} ${message}`].slice(-40)
-    if (details !== undefined) {
-      console.info('[trystero]', message, details)
-    } else {
-      console.info('[trystero]', message)
-    }
-  }
-
-  const relayStateLabel = (state) => {
-    if (state === 0) return 'connecting'
-    if (state === 1) return 'open'
-    if (state === 2) return 'closing'
-    if (state === 3) return 'closed'
-    return 'unknown'
-  }
-
-  const snapshotRelays = () => {
-    const sockets = getRelaySockets?.()
-    if (!sockets) return ''
-    const entries = Object.entries(sockets).map(([url, socket]) => {
-      return `${url}=${relayStateLabel(socket?.readyState)}`
-    })
-    return entries.join(' | ')
-  }
-
-  const updateRelayDiagnostics = () => {
-    const snapshot = snapshotRelays()
-    if (snapshot && snapshot !== lastRelaySnapshot) {
-      lastRelaySnapshot = snapshot
-      logDiagnostic(`Relays: ${snapshot}`)
-    }
-  }
-
-  const startRelayMonitor = () => {
-    stopRelayMonitor()
-    updateRelayDiagnostics()
-    relayTimer = setInterval(updateRelayDiagnostics, 4000)
-  }
-
   const stopStream = (stream) => {
     stream?.getTracks().forEach((track) => track.stop())
   }
@@ -114,13 +63,12 @@
     remoteStream = null
   }
 
-  const joinRoomWithDiagnostics = (roomId, label) => {
+  const joinRoomWithTimeout = (roomId) => {
     return joinRoom(config, roomId, {
       handshakeTimeoutMs: 30000,
       onJoinError: (details) => {
         const message = details?.error?.message ?? details?.error ?? 'unknown error'
-        logDiagnostic(`${label} join error: ${message}`, details)
-        error = 'Connection failed. Check relay status in diagnostics.'
+        error = `Connection failed: ${message}`
         status = ''
       },
     })
@@ -129,7 +77,6 @@
   const initReceiverFlow = async (secret) => {
     cleanupRoom()
     resetStreams()
-    stopRelayMonitor()
     error = ''
     status = 'Waiting for a sender…'
     roomSecret = normalizeSecret(secret)
@@ -137,17 +84,8 @@
     shareUrl = buildShareUrl(roomParam)
     qrCodeUrl = await QRCode.toDataURL(shareUrl, { margin: 1, width: 480 })
     const roomHash = await hashSecret(roomSecret)
-    room = joinRoomWithDiagnostics(roomHash, 'receiver')
-    logDiagnostic(`Receiver ready (selfId=${selfId})`)
-    startRelayMonitor()
-    room.onPeerJoin = (peerId) => {
-      logDiagnostic(`Peer joined: ${peerId}`)
-    }
-    room.onPeerLeave = (peerId) => {
-      logDiagnostic(`Peer left: ${peerId}`)
-    }
+    room = joinRoomWithTimeout(roomHash)
     room.onPeerStream = (stream) => {
-      logDiagnostic('Received remote stream')
       remoteStream = stream
       role = 'connected'
       const [track] = stream.getVideoTracks()
@@ -164,7 +102,6 @@
   const startSenderFlow = async (secret) => {
     cleanupRoom()
     resetStreams()
-    stopRelayMonitor()
     error = ''
     const normalized = normalizeSecret(secret)
     if (!isValidSecret(normalized)) {
@@ -184,20 +121,13 @@
       role = 'connected'
       status = 'Connecting to receiver…'
       const roomHash = await hashSecret(normalized)
-      room = joinRoomWithDiagnostics(roomHash, 'sender')
-      logDiagnostic(`Sender ready (selfId=${selfId})`)
-      startRelayMonitor()
+      room = joinRoomWithTimeout(roomHash)
       room.onPeerJoin = (peerId) => {
-        logDiagnostic(`Peer joined: ${peerId}`)
         if (localStream) {
           room.addStream(localStream, { target: peerId })
         }
       }
-      room.onPeerLeave = (peerId) => {
-        logDiagnostic(`Peer left: ${peerId}`)
-      }
       room.addStream(stream)
-      logDiagnostic('Local stream shared')
       status = 'Sharing screen…'
       const [track] = stream.getVideoTracks()
       if (track) {
@@ -250,7 +180,6 @@
   onDestroy(() => {
     cleanupRoom()
     resetStreams()
-    stopRelayMonitor()
   })
 </script>
 
@@ -262,7 +191,6 @@
     secret={roomSecret}
     shareUrl={shareUrl}
     status={status}
-    diagnostics={diagnostics}
     on:share={handleShareClick}
   />
 {:else}
@@ -272,7 +200,6 @@
     status={status}
     error={error}
     mode={role}
-    diagnostics={diagnostics}
     on:start={handleManualStart}
     on:scan={handleScan}
   />

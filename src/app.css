@@ -118,33 +118,6 @@ button:disabled {
   font-size: 16px;
 }
 
-.diagnostics {
-  width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px 14px;
-  background: var(--panel-soft);
-  color: var(--muted);
-  font-size: 12px;
-  text-align: left;
-}
-
-.diagnostics summary {
-  cursor: pointer;
-  color: var(--text);
-  font-weight: 600;
-}
-
-.diagnostics ul {
-  margin: 8px 0 0;
-  padding-left: 16px;
-}
-
-.diagnostics li {
-  margin: 4px 0;
-  word-break: break-word;
-}
-
 .share-button {
   position: fixed;
   bottom: 24px;
