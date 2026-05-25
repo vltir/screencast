@@ -112,9 +112,17 @@
   /** @param {KeyboardEvent & { currentTarget: HTMLInputElement }} event */
   const handleKeydown = (event) => {
     if (event.key !== ' ') return
-    const current = getCurrentWord(event.currentTarget.value)
-    if (!current || current !== lastPrefix) return
-    const suggestion = lastSuggestions.find((word) => word.startsWith(current) && word !== current)
+    const activeId = event.currentTarget.getAttribute('aria-activedescendant')
+    let suggestion = ''
+    if (activeId) {
+      const activeEl = document.getElementById(activeId)
+      suggestion = activeEl?.textContent?.trim() ?? ''
+    }
+    if (!suggestion) {
+      const current = getCurrentWord(event.currentTarget.value)
+      if (!current || current !== lastPrefix) return
+      suggestion = lastSuggestions.find((word) => word.startsWith(current) && word !== current) ?? ''
+    }
     if (!suggestion) return
     event.preventDefault()
     applySuggestion(suggestion)
