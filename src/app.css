@@ -195,6 +195,31 @@ button:disabled {
   background: #000;
 }
 
+.autocomplete {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  font-size: 14px;
+}
+
+.autocomplete > div {
+  padding: 8px 12px;
+}
+
+.autocomplete .group {
+  background: var(--panel-soft);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.autocomplete > div:hover:not(.group),
+.autocomplete > div.selected {
+  background: var(--accent);
+  color: #fff;
+}
+
 @media (max-width: 720px) {
   #app {
     padding: 24px 16px;
