@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@scure/bip39": "^2.2.0",
+    "autocompleter": "^9.3.2",
     "html5-qrcode": "^2.3.8",
     "qrcode": "^1.5.4",
     "trystero": "^0.25.0"

@@ -1,5 +1,6 @@
 <script>
-  import { onDestroy } from 'svelte'
+  import { onDestroy, onMount } from 'svelte'
+  import autocompleter from 'autocompleter'
   import { Html5Qrcode } from 'html5-qrcode'
 
   /** @type {string} */
@@ -18,10 +19,11 @@
   export let onScan = () => {}
 
   const scannerId = 'qr-reader'
-  const wordCount = 12
 
-  /** @type {string[]} */
-  let words = Array(wordCount).fill('')
+  /** @type {string} */
+  let inputValue = ''
+  /** @type {HTMLInputElement | null} */
+  let inputEl = null
   /** @type {boolean} */
   let scannerActive = false
   /** @type {string} */
@@ -38,16 +40,14 @@
       .trim()
 
   /** @param {string} value */
-  const setWordsFromSecret = (value) => {
-    const parts = normalizeWords(value).split(' ').filter(Boolean).slice(0, wordCount)
-    words = Array(wordCount)
-      .fill('')
-      .map((_, index) => parts[index] ?? '')
+  const setInputValue = (value) => {
+    inputValue = value
+    if (inputEl) {
+      inputEl.value = value
+    }
   }
 
-  const joinWords = () => words.map((word) => word.trim()).filter(Boolean).join(' ')
-
-  $: if (mode === 'sender-auto' && secret) setWordsFromSecret(secret)
+  $: if (mode === 'sender-auto' && secret) setInputValue(normalizeWords(secret))
 
   /** @param {string} text */
   const parseRoomFromText = (text) => {
@@ -77,14 +77,12 @@
   }
 
   const startSharing = () => {
-    onStart?.(joinWords())
+    onStart?.(normalizeWords(inputValue))
   }
 
-  /** @param {number} index @param {string} value */
-  const updateWord = (index, value) => {
-    const next = words.slice()
-    next[index] = value
-    words = next
+  /** @param {InputEvent & { currentTarget: HTMLInputElement }} event */
+  const updateInput = (event) => {
+    inputValue = event.currentTarget.value
   }
 
   const stopScanner = async () => {
@@ -112,7 +110,7 @@
           const parsed = parseRoomFromText(decodedText)
           await stopScanner()
           if (parsed) {
-            setWordsFromSecret(parsed)
+            setInputValue(normalizeWords(parsed))
             onScan?.(parsed)
           } else {
             scannerError = 'No room information found in the QR code.'
@@ -127,6 +125,43 @@
     }
   }
 
+
+  onMount(() => {
+    if (!inputEl) return
+    const instance = autocompleter({
+      input: inputEl,
+      minLength: 1,
+      fetch: (text, update, _trigger, _cursorPos) => {
+        const normalized = normalizeWords(text)
+        const parts = normalized.split(' ')
+        const current = parts[parts.length - 1] ?? ''
+        if (!current) {
+          update([])
+          return
+        }
+        const suggestions = wordlist
+          .filter((word) => word.startsWith(current))
+          .slice(0, 20)
+          .map((word) => ({ label: word, value: word }))
+        update(suggestions)
+      },
+      onSelect: (item, input) => {
+        inputValue = input.value
+        const current = normalizeWords(inputEl?.value ?? '')
+        const parts = current ? current.split(' ') : []
+        if (parts.length === 0) {
+          setInputValue(`${item.value} `)
+          return
+        }
+        parts[parts.length - 1] = item.value
+        setInputValue(`${parts.join(' ')} `)
+      },
+    })
+
+    return () => {
+      instance?.destroy?.()
+    }
+  })
 
   onDestroy(() => {
     stopScanner()
@@ -143,28 +178,18 @@
     {/if}
   </div>
 
-  <label class="input-label" for="word-0">Room words</label>
-  <div class="word-grid">
-    {#each words as word, index}
-      <input
-        id={`word-${index}`}
-        class="room-input word-input"
-        type="text"
-        list="bip39-words"
-        placeholder={`word ${index + 1}`}
-        value={word}
-        on:input={(event) => updateWord(index, event.currentTarget.value)}
-        autocomplete="off"
-        spellcheck="false"
-      />
-    {/each}
-  </div>
-
-  <datalist id="bip39-words">
-    {#each wordlist as word}
-      <option value={word}></option>
-    {/each}
-  </datalist>
+  <label class="input-label" for="room-input">Room words</label>
+  <input
+    id="room-input"
+    class="room-input"
+    type="text"
+    placeholder="word1 word2 word3 …"
+    bind:this={inputEl}
+    value={inputValue}
+    on:input={updateInput}
+    autocomplete="off"
+    spellcheck="false"
+  />
 
   <div class="button-row">
     <button class="primary" type="button" on:click={startSharing}>Start sharing</button>
