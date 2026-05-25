@@ -8,6 +8,6 @@ if (!target) {
   throw new Error('Missing #app element')
 }
 
-const app = mount(App, { target })
+const app = mount(App, { target, props: {} })
 
 export default app
