@@ -24,6 +24,10 @@
   let inputValue = ''
   /** @type {HTMLInputElement | null} */
   let inputEl = null
+  /** @type {string} */
+  let lastPrefix = ''
+  /** @type {string[]} */
+  let lastSuggestions = []
   /** @type {boolean} */
   let scannerActive = false
   /** @type {string} */
@@ -85,6 +89,37 @@
     inputValue = event.currentTarget.value
   }
 
+  /** @param {string} value */
+  const getCurrentWord = (value) => {
+    const normalized = normalizeWords(value)
+    if (!normalized) return ''
+    const parts = normalized.split(' ')
+    return parts[parts.length - 1] ?? ''
+  }
+
+  /** @param {string} value */
+  const applySuggestion = (value) => {
+    const current = normalizeWords(inputEl?.value ?? '')
+    const parts = current ? current.split(' ') : []
+    if (parts.length === 0) {
+      setInputValue(`${value} `)
+      return
+    }
+    parts[parts.length - 1] = value
+    setInputValue(`${parts.join(' ')} `)
+  }
+
+  /** @param {KeyboardEvent & { currentTarget: HTMLInputElement }} event */
+  const handleKeydown = (event) => {
+    if (event.key !== ' ') return
+    const current = getCurrentWord(event.currentTarget.value)
+    if (!current || current !== lastPrefix) return
+    const suggestion = lastSuggestions.find((word) => word.startsWith(current) && word !== current)
+    if (!suggestion) return
+    event.preventDefault()
+    applySuggestion(suggestion)
+  }
+
   const stopScanner = async () => {
     if (!qrScanner) return
     try {
@@ -136,25 +171,19 @@
         const parts = normalized.split(' ')
         const current = parts[parts.length - 1] ?? ''
         if (!current) {
+          lastPrefix = ''
+          lastSuggestions = []
           update([])
           return
         }
-        const suggestions = wordlist
-          .filter((word) => word.startsWith(current))
-          .slice(0, 20)
-          .map((word) => ({ label: word, value: word }))
-        update(suggestions)
+        const suggestions = wordlist.filter((word) => word.startsWith(current)).slice(0, 20)
+        lastPrefix = current
+        lastSuggestions = suggestions
+        update(suggestions.map((word) => ({ label: word, value: word })))
       },
       onSelect: (item, input) => {
         inputValue = input.value
-        const current = normalizeWords(inputEl?.value ?? '')
-        const parts = current ? current.split(' ') : []
-        if (parts.length === 0) {
-          setInputValue(`${item.value} `)
-          return
-        }
-        parts[parts.length - 1] = item.value
-        setInputValue(`${parts.join(' ')} `)
+        applySuggestion(item.value)
       },
     })
 
@@ -187,6 +216,7 @@
     bind:this={inputEl}
     value={inputValue}
     on:input={updateInput}
+    on:keydown={handleKeydown}
     autocomplete="off"
     spellcheck="false"
   />
