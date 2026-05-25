@@ -1,17 +1,18 @@
 <script>
-  import { afterUpdate, onMount } from 'svelte'
+  /** @type {{ stream: MediaStream | null }} */
+  let { stream } = $props()
+  /** @type {HTMLVideoElement | null} */
+  let videoEl = null
 
-  export let stream = null
-  let videoEl
-
-  const attachStream = () => {
-    if (videoEl && stream && videoEl.srcObject !== stream) {
+  $effect(() => {
+    if (!videoEl) return
+    if (stream && videoEl.srcObject !== stream) {
       videoEl.srcObject = stream
     }
-  }
-
-  onMount(attachStream)
-  afterUpdate(attachStream)
+    if (!stream && videoEl.srcObject) {
+      videoEl.srcObject = null
+    }
+  })
 </script>
 
 <video

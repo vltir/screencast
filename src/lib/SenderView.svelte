@@ -1,5 +1,5 @@
 <script>
-  import { createEventDispatcher, onDestroy } from 'svelte'
+  import { onDestroy } from 'svelte'
   import { Html5Qrcode } from 'html5-qrcode'
 
   /** @type {string} */
@@ -12,8 +12,11 @@
   export let error = ''
   /** @type {'sender-auto' | 'sender-manual' | 'connected'} */
   export let mode = 'sender-manual'
+  /** @type {(secret: string) => void} */
+  export let onStart = () => {}
+  /** @type {(secret: string) => void} */
+  export let onScan = () => {}
 
-  const dispatch = createEventDispatcher()
   const scannerId = 'qr-reader'
 
   /** @type {string} */
@@ -55,7 +58,7 @@
   }
 
   const startSharing = () => {
-    dispatch('start', { secret: inputValue })
+    onStart?.(inputValue)
   }
 
   const stopScanner = async () => {
@@ -84,7 +87,7 @@
           await stopScanner()
           if (parsed) {
             inputValue = parsed
-            dispatch('scan', { secret: parsed })
+            onScan?.(parsed)
           } else {
             scannerError = 'No room information found in the QR code.'
           }

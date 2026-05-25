@@ -186,16 +186,16 @@
     status = ''
   }
 
-  /** @param {CustomEvent<{secret: string}>} event */
-  const handleManualStart = (event) => {
+  /** @param {string} secret */
+  const handleManualStart = (secret) => {
     role = 'sender-manual'
-    startSenderFlow(event.detail.secret)
+    startSenderFlow(secret)
   }
 
-  /** @param {CustomEvent<{secret: string}>} event */
-  const handleScan = (event) => {
+  /** @param {string} secret */
+  const handleScan = (secret) => {
     role = 'sender-manual'
-    startSenderFlow(event.detail.secret)
+    startSenderFlow(secret)
   }
 
   onMount(() => {
@@ -226,7 +226,7 @@
     secret={roomSecret}
     shareUrl={shareUrl}
     status={status}
-    on:share={handleShareClick}
+    onShare={handleShareClick}
   />
 {:else}
   <SenderView
@@ -235,7 +235,7 @@
     status={status}
     error={error}
     mode={role}
-    on:start={handleManualStart}
-    on:scan={handleScan}
+    onStart={handleManualStart}
+    onScan={handleScan}
   />
 {/if}

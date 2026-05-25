@@ -1,5 +1,4 @@
 <script>
-  import { createEventDispatcher } from 'svelte'
 
   /** @type {string} */
   export let qrCodeUrl = ''
@@ -9,8 +8,9 @@
   export let shareUrl = ''
   /** @type {string} */
   export let status = ''
+  /** @type {() => void} */
+  export let onShare = () => {}
 
-  const dispatch = createEventDispatcher()
   /** @type {string[]} */
   let words = []
   $: words = secret ? secret.split(' ') : []
@@ -39,7 +39,7 @@
     <div class="status">{status}</div>
   {/if}
 
-  <button class="share-button" type="button" on:click={() => dispatch('share')}>
+  <button class="share-button" type="button" on:click={onShare}>
     I want to share
   </button>
 </div>
