@@ -26,6 +26,7 @@ body {
 }
 
 #app {
+  min-height: 100vh;
   min-height: 100svh;
   display: flex;
   align-items: center;
@@ -59,16 +60,21 @@ button:disabled {
 }
 
 .receiver {
-  width: min(900px, 100%);
+  width: 100%;
+  max-width: 900px;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 24px;
+}
+
+.receiver > * + * {
+  margin-top: 24px;
 }
 
 .qr img {
-  width: min(60vw, 420px);
+  width: 60vw;
+  max-width: 420px;
   height: auto;
   background: #fff;
   border-radius: 20px;
@@ -76,11 +82,16 @@ button:disabled {
 }
 
 .qr-placeholder {
-  width: min(60vw, 420px);
-  height: min(60vw, 420px);
+  width: 60vw;
+  max-width: 420px;
+  height: 60vw;
+  max-height: 420px;
   background: var(--panel);
   border: 1px dashed var(--border);
   border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   display: grid;
   place-items: center;
   color: var(--muted);
@@ -89,7 +100,6 @@ button:disabled {
 .secret {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
   justify-content: center;
   font-size: 20px;
 }
@@ -100,6 +110,7 @@ button:disabled {
   padding: 6px 10px;
   border-radius: 10px;
   text-transform: lowercase;
+  margin: 0 5px 10px;
 }
 
 .share-url {
@@ -126,15 +137,19 @@ button:disabled {
 }
 
 .sender {
-  width: min(720px, 100%);
+  width: 100%;
+  max-width: 720px;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 18px;
   padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+
+.sender > * + * {
+  margin-top: 16px;
 }
 
 .sender-header h1 {
@@ -165,7 +180,11 @@ button:disabled {
 .button-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+}
+
+.button-row > * {
+  margin-right: 10px;
+  margin-bottom: 10px;
 }
 
 .scanner {
@@ -188,6 +207,10 @@ button:disabled {
 
 .video-fullscreen {
   position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   inset: 0;
   width: 100vw;
   height: 100vh;
@@ -218,6 +241,40 @@ button:disabled {
 .autocomplete > div.selected {
   background: var(--accent);
   color: #fff;
+}
+
+@supports (gap: 1rem) {
+  .receiver {
+    gap: 24px;
+  }
+
+  .receiver > * + * {
+    margin-top: 0;
+  }
+
+  .secret {
+    gap: 10px;
+  }
+
+  .secret span {
+    margin: 0;
+  }
+
+  .sender {
+    gap: 16px;
+  }
+
+  .sender > * + * {
+    margin-top: 0;
+  }
+
+  .button-row {
+    gap: 10px;
+  }
+
+  .button-row > * {
+    margin: 0;
+  }
 }
 
 @media (max-width: 720px) {

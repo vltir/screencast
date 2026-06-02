@@ -1,13 +1,22 @@
 <script>
   import { onDestroy, onMount } from 'svelte'
   import { wordlist } from '@scure/bip39/wordlists/english.js'
-  import { joinRoom } from 'trystero/nostr'
+  import { joinRoom } from '@trystero-p2p/mqtt'
   import QRCode from 'qrcode'
   import ReceiverView from './lib/ReceiverView.svelte'
   import SenderView from './lib/SenderView.svelte'
   import VideoPlayer from './lib/VideoPlayer.svelte'
 
-  const config = { appId: 'serverless-screencast' }
+const config = {
+  appId: 'com.github.vltir.screencast',
+  relayConfig: {
+    urls: ['wss://broker.hivemq.com:8884/mqtt'],
+    keepalive: 0,          // 0 schaltet die fehleranfälligen Hintergrund-Pings komplett AB!
+    reconnectPeriod: 10000, // Wenn die Verbindung verliert, warte entspannte 10 Sek. vor dem Reconnect
+    connectTimeout: 30000,
+    resubscribe: true      // Sorgt dafür, dass nach einem echten Abbruch die Räume neu abonniert werden
+  }
+}
   const wordCount = 4
   const wordSet = new Set(wordlist)
 
@@ -33,6 +42,19 @@
       .replace(/[\s-]+/g, ' ')
       .trim()
 
+  /** @param {string} value */
+  const encodeUtf8 = (value) => {
+    if (typeof TextEncoder !== 'undefined') {
+      return new TextEncoder().encode(value)
+    }
+    const encoded = unescape(encodeURIComponent(value))
+    const bytes = new Uint8Array(encoded.length)
+    for (let i = 0; i < encoded.length; i += 1) {
+      bytes[i] = encoded.charCodeAt(i)
+    }
+    return bytes
+  }
+
   /** @param {string} secret */
   const toParamSecret = (secret) => normalizeSecret(secret).split(' ').join('-')
   /** @param {string} param */
@@ -53,8 +75,12 @@
 
   /** @param {string} secret */
   const hashSecret = async (secret) => {
-    const data = new TextEncoder().encode(normalizeSecret(secret))
-    const digest = await crypto.subtle.digest('SHA-256', data)
+    const cryptoApi = window.crypto?.subtle
+    if (!cryptoApi) {
+      throw new Error('Web Crypto is not available.')
+    }
+    const data = encodeUtf8(normalizeSecret(secret))
+    const digest = await cryptoApi.digest('SHA-256', data)
     return btoa(String.fromCharCode(...new Uint8Array(digest)))
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
@@ -122,9 +148,15 @@
     roomSecret = normalizeSecret(secret)
     roomParam = toParamSecret(roomSecret)
     shareUrl = buildShareUrl(roomParam)
-    qrCodeUrl = await QRCode.toDataURL(shareUrl, { margin: 1, width: 480 })
-    const roomHash = await hashSecret(roomSecret)
-    room = joinRoomWithTimeout(roomHash)
+    try {
+      qrCodeUrl = await QRCode.toDataURL(shareUrl, { margin: 1, width: 480 })
+      const roomHash = await hashSecret(roomSecret)
+      room = joinRoomWithTimeout(roomHash)
+    } catch (err) {
+      error = `Connection setup failed: ${getErrorMessage(err)}`
+      status = ''
+      return
+    }
     room.onPeerStream = /** @param {MediaStream} stream */ (stream) => {
       remoteStream = stream
       role = 'connected'
@@ -153,6 +185,11 @@
     roomSecret = normalized
     roomParam = toParamSecret(normalized)
     status = 'Requesting screen share…'
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+      error = 'Screen sharing is not supported in this browser.'
+      status = ''
+      return
+    }
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: true,

@@ -148,6 +148,10 @@
   const startScanner = async () => {
     scannerError = ''
     if (scannerActive) return
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      scannerError = 'Camera access is not supported in this browser.'
+      return
+    }
     qrScanner = new Html5Qrcode(scannerId)
     scannerActive = true
     try {

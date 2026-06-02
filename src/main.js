@@ -1,3 +1,5 @@
+import 'abortcontroller-polyfill/dist/abortcontroller-polyfill-only';
+
 import { mount } from 'svelte'
 import 'autocompleter/autocomplete.css'
 import './app.css'
