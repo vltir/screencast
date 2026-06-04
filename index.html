@@ -1,13 +1,32 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Screencast</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Screencast</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/src/shared/app.css">
+</head>
+<body>
+
+  <div class="receiver">
+    <div class="qr">
+      <img id="qrImage" src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox%3D'0 0 280 280'%2F%3E" alt="Pairing QR">
+    </div>
+
+    <div class="secret" id="wordsContainer" aria-label="Pairing words">
+      <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+    </div>
+
+    <div class="share-url" id="shareUrl">&nbsp;</div>
+
+    <a href="#" id="shareLink" class="share-button-inline">I want to share</a>
+
+    <div id="status" class="status">Initializing safe tracker connection...</div>
+
+    <video id="remoteVideo" class="video-fullscreen" style="display: none;" autoplay playsinline></video>
+  </div>
+
+  <script type="module" src="/src/receiver/main.js"></script>
+</body>
 </html>
