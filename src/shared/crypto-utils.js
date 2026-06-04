@@ -10,7 +10,6 @@ export function deriveTrackerRoomId(bip39String) {
   const bitArray = sjcl.hash.sha256.hash(normalized);
   const fullHex = sjcl.codec.hex.fromBits(bitArray);
 
-  // Perfectly mirrors pad20(safeSha256(secret)) from the prototype
   return pad20(fullHex);
 }
 
