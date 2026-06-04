@@ -3,7 +3,7 @@ import { wordlist } from '@scure/bip39/wordlists/english.js';
 import { pad20, deriveTrackerRoomId, encryptText, decryptText } from '../shared/crypto-utils.js';
 
 const wordsContainer = document.getElementById('wordsContainer');
-const qrContainer = document.getElementById('qrContainer');
+const qrImage = document.getElementById('qrImage');
 const shareUrlEl = document.getElementById('shareUrl');
 const shareLink = document.getElementById('shareLink');
 const statusEl = document.getElementById('status');
@@ -22,10 +22,9 @@ const baseHref = window.location.pathname.endsWith('/') ? window.location.pathna
 const cleanShareUrl = window.location.origin + baseHref + 'share?room=' + encodeURIComponent(selectedWords.join('-'));
 
 shareUrlEl.innerText = cleanShareUrl;
-
 shareLink.href = baseHref + 'share/';
 
-qrContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(cleanShareUrl)}" alt="Pairing QR">`;
+qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(cleanShareUrl)}`;
 
 const activeInfoHash = deriveTrackerRoomId(currentSecretKey);
 const myPeerId = pad20('peer-' + Math.random().toString(36).substring(2, 7).toUpperCase());
