@@ -22,6 +22,8 @@
     "abortcontroller-polyfill": "^1.7.8",
     "autocompleter": "^9.3.2",
     "html5-qrcode": "^2.3.8",
-    "qrcode": "^1.5.4"
+    "qrcode": "^1.5.4",
+    "sjcl": "^1.0.9",
+    "webrtc-adapter": "^9.0.5"
   }
 }
