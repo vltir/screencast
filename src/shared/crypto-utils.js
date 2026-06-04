@@ -20,3 +20,20 @@ export function encryptText(key, text) {
 export function decryptText(key, encryptedJson) {
   return sjcl.decrypt(key, encryptedJson);
 }
+
+export function optimizeSdp(sdpString) {
+  return sdpString
+    .split('\n')
+    .filter(line => {
+      if (line.startsWith('a=candidate:')) {
+        const parts = line.split(' ');
+        // Feld 4 im WebRTC-Standard-Kandidaten-String enthält die IP-Adresse.
+        // Wenn diese einen Doppelpunkt enthält, ist es eine IPv6-Adresse -> weg damit!
+        if (parts[4] && parts[4].indexOf(':') !== -1) {
+          return false;
+        }
+      }
+      return true;
+    })
+    .join('\n');
+}

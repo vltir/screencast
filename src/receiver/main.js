@@ -1,6 +1,6 @@
 import 'webrtc-adapter';
 import { wordlist } from '@scure/bip39/wordlists/english.js';
-import { pad20, deriveTrackerRoomId, encryptText } from '../shared/crypto-utils.js';
+import { pad20, deriveTrackerRoomId, encryptText, optimizeSdp } from '../shared/crypto-utils.js';
 import { initializeReceiver } from './tracker-rx.js';
 
 const wordsContainer = document.getElementById('wordsContainer');
@@ -52,7 +52,11 @@ function handleRemoteOffer(offerSdpText, senderPeerId, incomingOfferId, sendAnno
   peerConnection.onicecandidate = (event) => {
     if (event.candidate === null) {
       statusEl.innerText = "Sending encrypted response back...";
-      const encryptedSdp = encryptText(currentSecretKey, peerConnection.localDescription.sdp);
+      const rawSdp = peerConnection.localDescription.sdp;
+
+      const leanSdp = optimizeSdp(rawSdp);
+      const encryptedSdp = encryptText(currentSecretKey, leanSdp);
+
       sendAnnounce({
         to_peer_id: senderPeerId,
         offer_id: incomingOfferId,

@@ -1,7 +1,7 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
   import 'webrtc-adapter';
-  import { pad20, deriveTrackerRoomId, encryptText, decryptText } from '../../shared/crypto-utils.js';
+  import { pad20, deriveTrackerRoomId, encryptText, decryptText, optimizeSdp } from '../../shared/crypto-utils.js';
 
   let { bip39String } = $props();
 
@@ -113,7 +113,8 @@
       if (event.candidate === null) {
         statusText = "Verschlüssele Signal...";
         const rawSdp = peerConnection.localDescription.sdp;
-        const encryptedSdp = encryptText(currentSecretKey, rawSdp);
+        const leanSdp = optimizeSdp(rawSdp);
+        const encryptedSdp = encryptText(currentSecretKey, leanSdp);
 
         sendAnnounce({
           offers: [{
