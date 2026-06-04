@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>TV Receiver - Screencast</title>
+  <title>Screencast</title>
   <link rel="stylesheet" href="/src/shared/app.css">
 </head>
 <body>
@@ -10,18 +10,18 @@
   <div class="receiver">
     <div class="qr" id="qrContainer"></div>
 
-    <div class="secret" id="wordsContainer">
+    <div class="secret" id="wordsContainer" aria-label="Pairing words">
       <span>generating</span><span>words</span><span>...</span><span>...</span>
     </div>
 
     <div class="share-url" id="shareUrl"></div>
 
+    <a href="#" id="shareLink" class="share-button-inline">I want to share</a>
+
     <div id="status" class="status">Initializing safe tracker connection...</div>
 
     <video id="remoteVideo" class="video-fullscreen" style="display: none;" autoplay playsinline></video>
   </div>
-
-  <a href="share" class="share-button">I want to share</a>
 
   <script type="module" src="/src/receiver/main.js"></script>
 </body>

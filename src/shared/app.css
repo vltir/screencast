@@ -37,43 +37,30 @@ body {
   gap: 24px;
 }
 
-.sender {
-  width: min(720px, 100%);
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
-}
-
-h1 {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 700;
-}
-
-p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 15px;
-  line-height: 1.5;
-}
-
-.qr img {
-  width: min(60vw, 420px);
-  height: auto;
+.qr {
+  width: 420px;
+  height: 420px;
   background: #fff;
   border-radius: 20px;
   padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
-.share-url {
-  color: var(--muted);
-  font-size: 14px;
-  word-break: break-all;
+.qr img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+@media (max-width: 480px) {
+  .qr {
+    width: 80vw;
+    height: 80vw;
+  }
 }
 
 .secret {
@@ -92,6 +79,30 @@ p {
   text-transform: lowercase;
 }
 
+.share-url {
+  color: var(--muted);
+  font-size: 14px;
+  word-break: break-all;
+}
+
+.share-button-inline {
+  display: inline-block;
+  border: 1px solid var(--border);
+  background: var(--panel-soft);
+  color: var(--text);
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 15px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.share-button-inline:hover {
+  background: var(--panel);
+  border-color: var(--accent);
+}
+
 .status, .error {
   font-size: 16px;
 }
@@ -99,20 +110,22 @@ p {
 .status { color: var(--muted); }
 .error { color: var(--error); }
 
-.share-button {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  background: var(--panel-soft);
+.sender {
+  width: min(720px, 100%);
+  background: var(--panel);
   border: 1px solid var(--border);
-  color: var(--text);
-  padding: 12px 20px;
-  border-radius: 10px;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
-  font-size: 14px;
+  border-radius: 18px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
 }
+
+.sender-header h1 { margin: 0 0 8px; font-size: 28px; }
+.sender-header p { margin: 0; color: var(--muted); }
+.input-label { color: var(--muted); font-size: 14px; }
+.button-row { display: flex; flex-wrap: wrap; gap: 10px; }
 
 button {
   border: 1px solid var(--border);
@@ -124,26 +137,9 @@ button {
   cursor: pointer;
 }
 
-button.primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-
-button.secondary {
-  background: var(--panel-soft);
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.button-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.secondary { background: var(--panel-soft); }
+button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .room-input {
   width: 100%;
@@ -155,6 +151,10 @@ button:disabled {
   font-size: 16px;
 }
 
+.scanner { margin-top: 8px; display: none; }
+.scanner.scanner-active { display: block; }
+.scanner-surface { width: 100%; min-height: 260px; border-radius: 12px; border: 1px dashed var(--border); overflow: hidden; background: #070a12; }
+
 .video-fullscreen {
   position: fixed;
   inset: 0;
@@ -163,24 +163,6 @@ button:disabled {
   object-fit: contain;
   background: #000;
   z-index: 9999;
-}
-
-.scanner {
-  margin-top: 8px;
-  display: none;
-}
-
-.scanner.scanner-active {
-  display: block;
-}
-
-.scanner-surface {
-  width: 100%;
-  min-height: 260px;
-  border-radius: 12px;
-  border: 1px dashed var(--border);
-  overflow: hidden;
-  background: #070a12;
 }
 
 .autocomplete {
@@ -193,17 +175,5 @@ button:disabled {
   overflow: hidden;
 }
 
-.autocomplete > div {
-  padding: 8px 12px;
-  cursor: pointer;
-}
-
-.autocomplete > div:hover,
-.autocomplete > div.selected {
-  background: var(--accent);
-  color: #fff;
-}
-
-@media (max-width: 720px) {
-  .share-button { position: static; }
-}
+.autocomplete > div { padding: 8px 12px; cursor: pointer; }
+.autocomplete > div:hover, .autocomplete > div.selected { background: var(--accent); color: #fff; }
