@@ -8,44 +8,91 @@
   let isStreamingActive = $state(false);
   let inputElement = $state(null);
 
+  let lastPrefix = '';
+  let lastSuggestions = [];
+
+  function normalizeWords(value) {
+    return value
+      .toLowerCase()
+      .replace(/-+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function getCurrentWord(value) {
+    const normalized = normalizeWords(value);
+    if (!normalized) return '';
+    const parts = normalized.split(' ');
+    return parts[parts.length - 1] || '';
+  }
+
+  function applySuggestion(wordValue) {
+    const current = normalizeWords(inputElement?.value || '');
+    const parts = current ? current.split(' ') : [];
+    if (parts.length === 0) {
+      rawInputValue = wordValue + ' ';
+      return;
+    }
+    parts[parts.length - 1] = wordValue;
+    rawInputValue = parts.join(' ') + ' ';
+  }
+
+  function handleKeydown(event) {
+    if (event.key !== ' ') return;
+    const activeId = event.currentTarget.getAttribute('aria-activedescendant');
+    let suggestion = '';
+
+    if (activeId) {
+      const activeEl = document.getElementById(activeId);
+      suggestion = activeEl?.textContent?.trim() || '';
+    }
+    if (!suggestion) {
+      const current = getCurrentWord(event.currentTarget.value);
+      if (!current || current !== lastPrefix) return;
+      suggestion = lastSuggestions.find(word => word.startsWith(current) && word !== current) || '';
+    }
+    if (!suggestion) return;
+    event.preventDefault();
+    applySuggestion(suggestion);
+  }
+
   onMount(() => {
     if (!inputElement) return;
 
-    // Wire up the autocomplete handler directly via native autocompleter library matching repository spec
     autocomplete({
       input: inputElement,
       minLength: 1,
       fetch: (text, update) => {
-        const parts = text.toLowerCase().split(/[\s-]+/);
-        const currentWord = parts[parts.length - 1] || '';
-        if (!currentWord) return update([]);
+        const normalized = normalizeWords(text);
+        const parts = normalized.split(' ');
+        const current = parts[parts.length - 1] || '';
 
-        const suggestions = wordlist
-          .filter(word => word.startsWith(currentWord))
-          .slice(0, 5)
-          .map(word => ({ label: word, value: word }));
-        update(suggestions);
+        if (!current) {
+          lastPrefix = '';
+          lastSuggestions = [];
+          update([]);
+          return;
+        }
+
+        const suggestions = wordlist.filter(word => word.startsWith(current)).slice(0, 20);
+        lastPrefix = current;
+        lastSuggestions = suggestions;
+        update(suggestions.map(word => ({ label: word, value: word })));
       },
-      onSelect: (item) => {
-        const parts = rawInputValue.toLowerCase().split(/[\s-]+/);
-        parts[parts.length - 1] = item.value;
-        rawInputValue = parts.join(' ') + ' ';
-        inputElement.focus();
+      onSelect: (item, input) => {
+        rawInputValue = input.value;
+        applySuggestion(item.value);
       }
     });
 
-    // Handle automated entry if scanned via QR link parameter
+    // Extract query parameter and fill the input structure without locking the interaction flow
     const urlParams = new URLSearchParams(window.location.search);
     const roomParam = urlParams.get('room');
     if (roomParam) {
-      rawInputValue = roomParam.replace(/-+/g, ' ').trim().toLowerCase();
-      if (isFormValid) {
-        isStreamingActive = true;
-      }
+      rawInputValue = roomParam.replace(/-+/g, ' ').trim().toLowerCase() + ' ';
     }
   });
 
-  // Reactive state derivation for clean validation logic
   const cleanedSecret = $derived(rawInputValue.trim().toLowerCase().replace(/[\s-]+/g, ' '));
   const splitWords = $derived(cleanedSecret.split(' ').filter(Boolean));
   const isFormValid = $derived(splitWords.length === 4 && splitWords.every(word => wordlist.includes(word)));
@@ -68,9 +115,10 @@
         id="room-input"
         class="room-input"
         type="text"
-        placeholder="e.g. apple banana cherry dog"
+        placeholder="word1 word2 word3 word4"
         bind:this={inputElement}
         bind:value={rawInputValue}
+        onkeydown={handleKeydown}
         autocomplete="off"
         spellcheck="false"
       />

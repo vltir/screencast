@@ -4,10 +4,10 @@ import { pad20, deriveTrackerRoomId, encryptText, decryptText } from '../shared/
 
 const wordsContainer = document.getElementById('wordsContainer');
 const qrContainer = document.getElementById('qrContainer');
+const shareUrlEl = document.getElementById('shareUrl');
 const statusEl = document.getElementById('status');
 const remoteVideo = document.getElementById('remoteVideo');
 
-// Select 4 safe words
 const selectedWords = [];
 for (let i = 0; i < 4; i++) {
   const randomIndex = Math.floor(Math.random() * 2048);
@@ -15,13 +15,12 @@ for (let i = 0; i < 4; i++) {
 }
 
 const currentSecretKey = selectedWords.join(' ').toLowerCase();
-
-// Render the words into separate modern pill spans matching the repository style
 wordsContainer.innerHTML = selectedWords.map(word => `<span>${word}</span>`).join('');
 
-// Generate a safe text-based QR code URL using a public serverless API to avoid local canvas/buffer bugs
-const shareUrl = window.location.origin + '/share.html?room=' + encodeURIComponent(currentSecretKey.split(' ').join('-'));
-qrContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(shareUrl)}" alt="Pairing QR">`;
+const cleanShareUrl = window.location.origin + window.location.pathname + 'share?room=' + encodeURIComponent(selectedWords.join('-'));
+shareUrlEl.innerText = cleanShareUrl;
+
+qrContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(cleanShareUrl)}" alt="Pairing QR">`;
 
 const activeInfoHash = deriveTrackerRoomId(currentSecretKey);
 const myPeerId = pad20('peer-' + Math.random().toString(36).substring(2, 7).toUpperCase());

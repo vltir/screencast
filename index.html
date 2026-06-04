@@ -8,12 +8,13 @@
 <body>
 
   <div class="receiver">
-    <div class="qr" id="qrContainer">
-      </div>
+    <div class="qr" id="qrContainer"></div>
 
     <div class="secret" id="wordsContainer">
       <span>generating</span><span>words</span><span>...</span><span>...</span>
     </div>
+
+    <div class="share-url" id="shareUrl"></div>
 
     <h1>TV Receiver</h1>
     <p>Scan the QR code above or enter the 4 pairing words on your streaming device.</p>
@@ -23,7 +24,7 @@
     <video id="remoteVideo" class="video-fullscreen" style="display: none;" autoplay playsinline></video>
   </div>
 
-  <a href="/share.html" class="share-button">I want to share</a>
+  <a href="/share" class="share-button">I want to share</a>
 
   <script type="module" src="/src/receiver/main.js"></script>
 </body>

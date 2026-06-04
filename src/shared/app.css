@@ -69,6 +69,13 @@ p {
   padding: 12px;
 }
 
+.share-url {
+  color: var(--muted);
+  font-size: 14px;
+  word-break: break-all;
+  margin-top: -8px;
+}
+
 .secret {
   display: flex;
   flex-wrap: wrap;
@@ -92,12 +99,6 @@ p {
   color: var(--muted);
   font-size: 14px;
   font-style: italic;
-}
-
-.error {
-  color: var(--error);
-  font-size: 14px;
-  font-weight: 500;
 }
 
 .share-button {
@@ -150,7 +151,6 @@ button.primary:disabled {
   background: #0d111b;
   color: var(--text);
   font-size: 16px;
-  font-family: monospace;
 }
 
 .room-input:focus {
@@ -166,4 +166,25 @@ button.primary:disabled {
   object-fit: contain;
   background: #000;
   z-index: 9999;
+}
+
+.autocomplete {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  font-size: 14px;
+  overflow: hidden;
+}
+
+.autocomplete > div {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.autocomplete > div:hover,
+.autocomplete > div.selected {
+  background: var(--accent);
+  color: #fff;
 }
