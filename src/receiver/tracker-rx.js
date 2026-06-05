@@ -1,7 +1,7 @@
 import { decryptText } from '../shared/crypto-utils.js';
 
 export function initializeReceiver({ activeInfoHash, myPeerId, currentSecretKey, onSignalReceived, onStatusChange }) {
-  const trackerUrl = 'wss://tracker.webtorrent.dev';
+  const trackerUrl = 'wss://tracker.openwebtorrent.com';
   let ws = null;
   let announceInterval = null;
 

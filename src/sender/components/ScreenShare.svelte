@@ -9,7 +9,7 @@
   let isTransmissionActive = $state(false);
   let previewVideoEl = $state(null);
 
-  const trackerUrl = 'wss://tracker.webtorrent.dev';
+  const trackerUrl = 'wss://tracker.openwebtorrent.com';
   const webrtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
   const activeInfoHash = $derived(deriveTrackerRoomId(bip39String));
