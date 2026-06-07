@@ -162,6 +162,35 @@
       .then(() => {
         statusText = "Verbindung gesichert! Übertragung aktiv.";
         isTransmissionActive = true;
+        if (localStream && peerConnection) {
+          const videoTrack = localStream.getVideoTracks()[0];
+          if (videoTrack) {
+            const settings = videoTrack.getSettings();
+            setTimeout(() => {
+              peerConnection.getStats().then(stats => {
+                let negotiatedCodec = "not defined";
+                stats.forEach(report => {
+                  if (report.type === 'outbound-rtp' && report.kind === 'video' && report.codecId) {
+                    const codecReport = stats.get(report.codecId);
+                    if (codecReport && codecReport.mimeType) {
+                      negotiatedCodec = codecReport.mimeType.toUpperCase().replace("VIDEO/", "");
+                    }
+                  }
+                });
+                const videoSender = peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+                const maxBitrate = videoSender?.getParameters()?.encodings?.[0]?.maxBitrate;
+                console.table({
+                  "resolution": `${settings.width || 'N/A'} x ${settings.height || 'N/A'}`,
+                  "framerate": settings.frameRate ? Math.round(settings.frameRate) : 'N/A',
+                  "video-codec": negotiatedCodec,
+                  "max-bitrate": maxBitrate ? (maxBitrate / 1000000) + " Mbps" : "unlimited",
+                  "video-source": videoTrack.label,
+                  "track-status": videoTrack.readyState
+                });
+              }).catch(err => console.error("Error on generating statistics", err));
+            }, 500);
+          }
+        }
       });
   }
 </script>
