@@ -40,6 +40,8 @@ function handleRemoteOffer(offerSdpText, senderPeerId, incomingOfferId, sendAnno
   if (peerConnection) return;
   peerConnection = new RTCPeerConnection(webrtcConfig);
 
+  const finalizedSdp = isLowEndDevice ? prioritizeH264(offerSdpText) : offerSdpText;
+
   peerConnection.ontrack = (event) => {
     if (event.streams && event.streams[0]) {
       remoteVideo.srcObject = event.streams[0];
@@ -67,11 +69,39 @@ function handleRemoteOffer(offerSdpText, senderPeerId, incomingOfferId, sendAnno
     }
   };
 
-  const offerDesc = new RTCSessionDescription({ type: 'offer', sdp: offerSdpText });
+  const offerDesc = new RTCSessionDescription({ type: 'offer', sdp: finalizedSdp });
   peerConnection.setRemoteDescription(offerDesc)
     .then(() => peerConnection.createAnswer())
     .then(answer => peerConnection.setLocalDescription(answer))
     .catch(console.error);
+}
+
+function prioritizeH264(sdp) {
+  const lines = sdp.split('\n').map(l => l.trim());
+  const mVideoIndex = lines.findIndex(line => line.startsWith('m=video'));
+  if (mVideoIndex === -1) return sdp;
+
+  const h264Payloads = [];
+  lines.forEach(line => {
+    if (line.startsWith('a=rtpmap:') && line.toUpperCase().includes('H264')) {
+      const match = line.match(/a=rtpmap:(\d+)/);
+      if (match) h264Payloads.push(match[1]);
+    }
+  });
+
+  if (h264Payloads.length === 0) return sdp;
+
+  const mVideoParts = lines[mVideoIndex].split(' ');
+  const header = mVideoParts.slice(0, 3);
+  const existingPayloads = mVideoParts.slice(3);
+
+  const newPayloads = [
+    ...h264Payloads,
+    ...existingPayloads.filter(p => !h264Payloads.includes(p))
+  ];
+
+  lines[mVideoIndex] = [...header, ...newPayloads].join(' ');
+  return lines.join('\r\n');
 }
 
 initializeReceiver({
