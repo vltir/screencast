@@ -40,8 +40,6 @@ function handleRemoteOffer(offerSdpText, senderPeerId, incomingOfferId, sendAnno
   if (peerConnection) return;
   peerConnection = new RTCPeerConnection(webrtcConfig);
 
-  const finalizedSdp = isLowEndDevice ? prioritizeH264(offerSdpText) : offerSdpText;
-
   peerConnection.ontrack = (event) => {
     if (event.streams && event.streams[0]) {
       remoteVideo.srcObject = event.streams[0];
@@ -50,7 +48,7 @@ function handleRemoteOffer(offerSdpText, senderPeerId, incomingOfferId, sendAnno
 
       remoteVideo.muted = true;
       remoteVideo.play().catch(console.error);
-      if (remoteVideo.requestFullscreen) remoteVideo.requestFullscreen().catch(console.error);
+      remoteVideo.classList.add('tv-fullscreen-active');
     }
   };
 
@@ -69,6 +67,8 @@ function handleRemoteOffer(offerSdpText, senderPeerId, incomingOfferId, sendAnno
     }
   };
 
+  const finalizedSdp = isLowEndDevice ? forceStrictH264Only(offerSdpText) : offerSdpText;
+
   const offerDesc = new RTCSessionDescription({ type: 'offer', sdp: finalizedSdp });
   peerConnection.setRemoteDescription(offerDesc)
     .then(() => peerConnection.createAnswer())
@@ -76,34 +76,67 @@ function handleRemoteOffer(offerSdpText, senderPeerId, incomingOfferId, sendAnno
     .catch(console.error);
 }
 
-function prioritizeH264(sdp) {
-  const lines = sdp.split('\n').map(l => l.trim());
+function forceStrictH264Only(sdp) {
+  const lines = sdp.split(/\r?\n/);
+
   const mVideoIndex = lines.findIndex(line => line.startsWith('m=video'));
   if (mVideoIndex === -1) return sdp;
 
-  const h264Payloads = [];
+  const excludedPayloads = [];
   lines.forEach(line => {
-    if (line.startsWith('a=rtpmap:') && line.toUpperCase().includes('H264')) {
-      const match = line.match(/a=rtpmap:(\d+)/);
-      if (match) h264Payloads.push(match[1]);
+    if (line.startsWith('a=rtpmap:')) {
+      const match = line.match(/a=rtpmap:(\d+)\s+(VP8|VP9|AV1)/i);
+      if (match) {
+        excludedPayloads.push(match[1]);
+      }
     }
   });
 
-  if (h264Payloads.length === 0) return sdp;
+  lines.forEach(line => {
+    if (line.startsWith('a=fmtp:')) {
+      const colonIndex = line.indexOf(':');
+      const spaceIndex = line.indexOf(' ', colonIndex);
+      if (spaceIndex !== -1) {
+        const rtxPayloadId = line.substring(colonIndex + 1, spaceIndex).trim();
+        const aptMatch = line.match(/apt=(\d+)/i);
+
+        if (aptMatch) {
+          const basePayloadId = aptMatch[1];
+          if (excludedPayloads.includes(basePayloadId) && !excludedPayloads.includes(rtxPayloadId)) {
+            excludedPayloads.push(rtxPayloadId);
+          }
+        }
+      }
+    }
+  });
+
+  if (excludedPayloads.length === 0) return sdp;
 
   const mVideoParts = lines[mVideoIndex].split(' ');
   const header = mVideoParts.slice(0, 3);
-  const existingPayloads = mVideoParts.slice(3);
+  const payloads = mVideoParts.slice(3);
 
-  const newPayloads = [
-    ...h264Payloads,
-    ...existingPayloads.filter(p => !h264Payloads.includes(p))
-  ];
+  const allowedPayloads = payloads.filter(p => !excludedPayloads.includes(p));
 
-  lines[mVideoIndex] = [...header, ...newPayloads].join(' ');
-  return lines.join('\r\n');
+  if (allowedPayloads.length === 0) return sdp;
+
+  lines[mVideoIndex] = [...header, ...allowedPayloads].join(' ');
+
+  const finalizedLines = lines.filter(line => {
+    if (line.startsWith('a=rtpmap:') || line.startsWith('a=fmtp:') || line.startsWith('a=rtcp-fb:')) {
+      const colonIndex = line.indexOf(':');
+      const spaceIndex = line.indexOf(' ', colonIndex);
+      const endOfId = spaceIndex !== -1 ? spaceIndex : line.length;
+      const payloadId = line.substring(colonIndex + 1, endOfId).trim();
+
+      if (excludedPayloads.includes(payloadId)) {
+        return false;
+      }
+    }
+    return true;
+  });
+  return finalizedLines.join('\r\n');
 }
-
 initializeReceiver({
   activeInfoHash,
   myPeerId,

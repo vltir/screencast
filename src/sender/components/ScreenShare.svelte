@@ -168,9 +168,12 @@
             const settings = videoTrack.getSettings();
             setTimeout(() => {
               peerConnection.getStats().then(stats => {
-                let negotiatedCodec = "not defined";
+                let negotiatedCodec = "H264 (forced)";
                 stats.forEach(report => {
-                  if (report.type === 'outbound-rtp' && report.kind === 'video' && report.codecId) {
+                  if (report.type === 'codec' && report.mimeType && report.mimeType.toLowerCase().includes('video')) {
+                    negotiatedCodec = report.mimeType.toUpperCase().replace("VIDEO/", "");
+                  }
+                  if ((report.type === 'outbound-rtp' || report.type === 'inbound-rtp') && report.kind === 'video' && report.codecId) {
                     const codecReport = stats.get(report.codecId);
                     if (codecReport && codecReport.mimeType) {
                       negotiatedCodec = codecReport.mimeType.toUpperCase().replace("VIDEO/", "");
@@ -187,8 +190,8 @@
                   "video-source": videoTrack.label,
                   "track-status": videoTrack.readyState
                 });
-              }).catch(err => console.error("Error on generating statistics", err));
-            }, 500);
+              }).catch(err => console.error(err));
+            }, 600);
           }
         }
       });
