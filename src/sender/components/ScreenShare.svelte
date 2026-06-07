@@ -73,11 +73,38 @@
       }, 15000);
     };
 
-    ws.onmessage = (event) => {
+    ws.onmessage = async (event) => {
       const data = JSON.parse(event.data);
 
       if (data.answer && data.answer.sdp) {
         statusText = "Antwort erhalten. Entschlüssele...";
+
+        if (data.receiver_capabilities?.isLowEnd && localStream) {
+          statusText = "Low-End Device erkannt.";
+          console.log("streaming to low-end device");
+          try {
+            const videoTrack = localStream.getVideoTracks()[0];
+            if (videoTrack) {
+              await videoTrack.applyConstraints({
+                width: {max: 1280},
+                height: {max: 720},
+                frameRate: {max: 25}
+              });
+            }
+            if (peerConnection) {
+              const videoSender = peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+              if (videoSender) {
+                const parameters = videoSender.getParameters();
+                if (!parameters.encodings) parameters.encodings = [{}];
+                parameters.encodings[0].maxBitrate = 1500000;
+                await videoSender.setParameters(parameters);
+              }
+            }
+          } catch (err) {
+            console.error("Error on throttling the stream:", err);
+          }
+        }
+
         try {
           const decryptedSdp = decryptText(currentSecretKey, data.answer.sdp);
           handleRemoteAnswer(decryptedSdp);

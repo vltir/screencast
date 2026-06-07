@@ -3,6 +3,9 @@ import { wordlist } from '@scure/bip39/wordlists/english.js';
 import { pad20, deriveTrackerRoomId, encryptText } from '../shared/crypto-utils.js';
 import { initializeReceiver } from './tracker-rx.js';
 
+const isLowEndDevice = /Web0S|LG Browser|SmartTV/i.test(navigator.userAgent) ||
+                       (/Chrome\/([0-9]+)/.exec(navigator.userAgent)?.[1] < 60);
+
 const wordsContainer = document.getElementById('wordsContainer');
 const qrImage = document.getElementById('qrImage');
 const shareUrlEl = document.getElementById('shareUrl');
@@ -56,6 +59,9 @@ function handleRemoteOffer(offerSdpText, senderPeerId, incomingOfferId, sendAnno
       sendAnnounce({
         to_peer_id: senderPeerId,
         offer_id: incomingOfferId,
+        receiver_capabilities: {
+          isLowEnd: isLowEndDevice
+        },
         answer: { type: "answer", sdp: encryptedSdp }
       });
     }
